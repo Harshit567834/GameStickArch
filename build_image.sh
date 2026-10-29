@@ -58,7 +58,7 @@ pacman-key --init
 pacman-key --populate archlinuxarm
 
 # Install required packages
-pacman -Sy --noconfirm dosfstools parted lynx python ppp bluez bluez-utils openssh
+pacman -Sy --noconfirm dosfstools parted lynx python python-pyserial ppp bluez bluez-utils openssh
 
 # Enable SSH
 systemctl enable sshd
