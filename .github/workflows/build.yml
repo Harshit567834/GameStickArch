@@ -1,0 +1,35 @@
+name: Build GameStickArch Image
+
+on:
+  push:
+    branches: [ main, arena/* ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support parted dosfstools e2fsprogs bsdtar
+
+      - name: Build Image
+        run: |
+          sudo bash build_image.sh
+
+      - name: Zip Image
+        run: |
+          zip -9 GameStickArch.img.zip GameStickArch.img
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: GameStickArch-Image
+          path: GameStickArch.img.zip
