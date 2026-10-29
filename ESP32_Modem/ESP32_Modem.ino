@@ -5,6 +5,9 @@
 #include <Preferences.h>
 
 Preferences preferences;
+WiFiServer sshProxy(22);
+WiFiClient sshClient;
+WiFiClient sshTarget;
 
 ppp_pcb *ppp;
 struct netif ppp_netif;
@@ -74,13 +77,49 @@ void loop() {
           ppp_set_default(ppp);
           ppp_set_usepeerdns(ppp, 1);
           ppp_connect(ppp, 0);
+          
+          // Enable NAPT (Network Address and Port Translation) for internet access
+          #if defined(ESP_IDF_VERSION) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
+          esp_netif_t *netif_sta = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+          if (netif_sta) {
+              esp_netif_napt_enable(netif_sta);
+          }
+          #endif
+          
           in_command_mode = false;
+          sshProxy.begin();
           Serial.println("PPP_STARTED");
         }
       }
     }
   } else {
     // PPP Mode
+    // Handle SSH Proxy
+    if (sshProxy.hasClient()) {
+      if (sshClient) sshClient.stop();
+      sshClient = sshProxy.available();
+      if (sshTarget) sshTarget.stop();
+      sshTarget.connect("10.0.0.1", 22);
+    }
+    
+    if (sshClient && sshClient.connected() && sshTarget && sshTarget.connected()) {
+      size_t c_avail = sshClient.available();
+      if (c_avail > 0) {
+        uint8_t buf[128];
+        size_t len = sshClient.read(buf, min(c_avail, sizeof(buf)));
+        sshTarget.write(buf, len);
+      }
+      size_t t_avail = sshTarget.available();
+      if (t_avail > 0) {
+        uint8_t buf[128];
+        size_t len = sshTarget.read(buf, min(t_avail, sizeof(buf)));
+        sshClient.write(buf, len);
+      }
+    } else {
+      if (sshClient) sshClient.stop();
+      if (sshTarget) sshTarget.stop();
+    }
+
     while (Serial.available()) {
       uint8_t buffer[128];
       int len = Serial.readBytes(buffer, sizeof(buffer));

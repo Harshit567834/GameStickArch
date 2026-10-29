@@ -116,10 +116,10 @@ def setup_wifi(stdscr):
         ser.write(b'START\n')
         ser.close()
         
-        # Start pppd
+        # Start pppd as a server
         os.system(f"killall pppd 2>/dev/null")
         time.sleep(1)
-        os.system(f"pppd {SERIAL_PORT} {BAUD_RATE} local noauth defaultroute persist maxfail 0 &")
+        os.system(f"pppd {SERIAL_PORT} {BAUD_RATE} 10.0.0.1:10.0.0.2 proxyarp local noauth defaultroute persist maxfail 0 &")
         
         stdscr.addstr(9, 2, "WiFi configured! Press any key.")
         stdscr.getch()
