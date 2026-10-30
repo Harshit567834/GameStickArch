@@ -37,7 +37,7 @@ wget -q http://os.archlinuxarm.org/os/ArchLinuxARM-armv7-latest.tar.gz
 
 # Extract rootfs
 echo "Extracting rootfs (this may take a while)..."
-sudo bsdtar --no-xattrs --no-mac-metadata --no-acl -xpf ArchLinuxARM-armv7-latest.tar.gz -C mnt
+sudo bsdtar -xpf ArchLinuxARM-armv7-latest.tar.gz -C mnt || true
 
 # Copy overlay files
 echo "Applying overlay..."
