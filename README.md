@@ -64,12 +64,10 @@ Because the GameStick's standard USB-A port might not supply 5V on first boot wi
 
 1. Open the `ESP32_Wireless_Terminal` folder from your downloaded release.
 2. Open `ESP32_Wireless_Terminal.ino` in the **Arduino IDE** and flash it to your ESP32.
-3. **Hardware Connection (No Soldering!):**
-   - You need a **Micro-USB OTG Y-Cable** (a cable that has a Micro-USB for the GameStick, a USB-A port for devices, and another plug for power injection).
-   - Plug the OTG end into the GameStick.
-   - Plug your wall power into the power-injection port (this powers the GameStick *and* the ESP32).
-   - Plug the ESP32 directly into the USB-A data port using a standard Micro-USB cable.
-   - *Alternative (Internal Pins):* Solder ESP32 TX to GameStick RX, ESP32 RX to GameStick TX, and power the ESP32 separately with a phone charger.
+3. **Hardware Connection Options (Choose One):**
+   - **Option A (The VIN Pin Power Method):** Connect the ESP32 to the GameStick using a standard Micro-USB OTG cable for *data*. Since the GameStick's USB port might not output power, turn on the ESP32 by wiring a separate 5V power source directly to the ESP32's **`VIN`** (or `5V`) pin, and Ground to the **`GND`** pin! 
+   - **Option B (OTG Y-Cable):** Use a Micro-USB OTG Y-Cable (a cable that injects wall power into both the GameStick and the USB data port simultaneously). Plug the ESP32 into the USB-A end.
+   - **Option C (Internal UART Soldering):** Solder ESP32 TX to GameStick RX, ESP32 RX to GameStick TX, and power the ESP32 separately.
 4. **Using the PC GUI:**
    - With the ESP32 powered on, look at your PC's Wi-Fi networks and connect to **`GameStick-Terminal`** (Password: `12345678`).
    - Run the Python app: `python GameStick_Console.py` (Works natively on Windows, Mac, and Linux).
