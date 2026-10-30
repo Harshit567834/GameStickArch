@@ -59,15 +59,22 @@ If you happen to have a USB keyboard plugged into the GameStick (via an OTG spli
 ### Hardware Option 1: Standard USB Wi-Fi Adapter (Easiest)
 NetworkManager is pre-installed. If you have a standard Linux-compatible USB Wi-Fi dongle (like a TP-Link or generic 802.11n adapter), just plug it into the GameStick's USB port. Use the `wifi.txt` method or the `gamestick_menu.py` to connect.
 
-### Hardware Option 2: The ESP32 Custom Modem
-If you don't have a USB Wi-Fi adapter, you can use a $4 ESP32 microcontroller as a transparent SLIP/PPP modem!
-1. Open the `ESP32_Modem` folder from your downloaded release.
-2. Open `ESP32_Modem.ino` in the **Arduino IDE**.
-3. Flash the code to your ESP32.
-4. Plug the ESP32 into the GameStick. You can do this in two ways:
-   - **The USB Cable Way:** Plug a Micro-USB cable from the ESP32 directly into the GameStick's USB port. GameStickArch is programmed to auto-detect the ESP32 on `/dev/ttyUSB0`.
-   - **The Internal Solder Way:** Solder ESP32 TX to GameStick RX (UART0), ESP32 RX to GameStick TX, and connect the Grounds. GameStickArch auto-detects this on `/dev/ttyS0`.
-5. The GameStick will send serial commands to the ESP32, telling it to connect to Wi-Fi. The ESP32 then establishes a PPP data-tunnel with the GameStick, granting you internet!
+### Hardware Option 2: The ESP32 Wireless Terminal
+Because the GameStick's standard USB-A port might not supply 5V on first boot without device tree modifications, we can use an ESP32 as a "Wireless Serial Bridge" to get a direct, raw terminal into the GameStick!
+
+1. Open the `ESP32_Wireless_Terminal` folder from your downloaded release.
+2. Open `ESP32_Wireless_Terminal.ino` in the **Arduino IDE** and flash it to your ESP32.
+3. **Hardware Connection (No Soldering!):**
+   - You need a **Micro-USB OTG Y-Cable** (a cable that has a Micro-USB for the GameStick, a USB-A port for devices, and another plug for power injection).
+   - Plug the OTG end into the GameStick.
+   - Plug your wall power into the power-injection port (this powers the GameStick *and* the ESP32).
+   - Plug the ESP32 directly into the USB-A data port using a standard Micro-USB cable.
+   - *Alternative (Internal Pins):* Solder ESP32 TX to GameStick RX, ESP32 RX to GameStick TX, and power the ESP32 separately with a phone charger.
+4. **Using the PC GUI:**
+   - With the ESP32 powered on, look at your PC's Wi-Fi networks and connect to **`GameStick-Terminal`** (Password: `12345678`).
+   - Run the Python app: `python GameStick_Console.py` (Works natively on Windows, Mac, and Linux).
+   - Click **Connect Terminal**. You will instantly be dropped into a live `root@gamestick:~#` terminal. 
+   - You now have full diagnostic access to the GameStick! Run `dmesg` to check hardware logs, manually configure Wi-Fi, or explore the file system without ever needing an HDMI screen or keyboard!
 
 ---
 

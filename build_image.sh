@@ -61,13 +61,15 @@ sudo chmod +x mnt/usr/local/bin/gamestick_menu.py
 # Setup QEMU for chroot
 sudo cp /usr/bin/qemu-arm-static mnt/usr/bin/
 
-# Force ttyS0 to Auto-Login root on GameStick UART pins
-sudo mkdir -p mnt/etc/systemd/system/serial-getty@ttyS0.service.d/
-sudo bash -c 'cat << EOF > mnt/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
+# Force auto-login root on GameStick UART pins and USB Serial ports
+for port in ttyS0 ttyUSB0 ttyACM0; do
+    sudo mkdir -p mnt/etc/systemd/system/serial-getty@${port}.service.d/
+    sudo bash -c "cat << EOF > mnt/etc/systemd/system/serial-getty@${port}.service.d/override.conf
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty -o '\''-p -f \\u'\'' --keep-baud 115200,38400,9600 --noclear --autologin root %I $TERM
-EOF'
+ExecStart=-/sbin/agetty -o '-p -f \\\\\\\\u' --keep-baud 115200,38400,9600 --noclear --autologin root %I \\\$TERM
+EOF"
+done
 
 # Configure the system inside chroot
 echo "Configuring system inside chroot..."
@@ -78,6 +80,10 @@ sudo chroot mnt /bin/bash <<EOF
 
 # Disable pacman sandbox which breaks in QEMU GitHub Actions
 sed -i 's/^#DisableSandbox/DisableSandbox/g' /etc/pacman.conf || echo "DisableSandbox" >> /etc/pacman.conf
+
+# Enable serial-getty for the USB ports so they start immediately
+systemctl enable serial-getty@ttyUSB0.service
+systemctl enable serial-getty@ttyACM0.service
 
 # Initialize pacman keyring
 pacman-key --init
