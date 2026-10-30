@@ -16,10 +16,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Ensure qemu-arm-static binary exists for chroot
         run: |
-          sudo apt-get update || true
-          sudo apt-get install -y qemu-user-static
+          if [ ! -f /usr/bin/qemu-arm-static ]; then
+            wget -q https://github.com/multiarch/qemu-user-static/releases/download/v7.2.0-1/qemu-arm-static
+            chmod +x qemu-arm-static
+            sudo mv qemu-arm-static /usr/bin/
+          fi
 
       - name: Build Image
         run: |
