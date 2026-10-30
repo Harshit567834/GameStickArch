@@ -61,6 +61,14 @@ sudo chmod +x mnt/usr/local/bin/gamestick_menu.py
 # Setup QEMU for chroot
 sudo cp /usr/bin/qemu-arm-static mnt/usr/bin/
 
+# Force ttyS0 to Auto-Login root on GameStick UART pins
+sudo mkdir -p mnt/etc/systemd/system/serial-getty@ttyS0.service.d/
+sudo bash -c 'cat << EOF > mnt/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -o '\''-p -f \\u'\'' --keep-baud 115200,38400,9600 --noclear --autologin root %I $TERM
+EOF'
+
 # Configure the system inside chroot
 echo "Configuring system inside chroot..."
 sudo mount --bind /dev mnt/dev

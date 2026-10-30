@@ -46,9 +46,11 @@ jobs:
 
       - name: Prepare Release Zip
         run: |
-          mkdir -p GameStickArch_Release/ESP32_Modem
+          mkdir -p GameStickArch_Release/ESP32_Wireless_Terminal
+          mkdir -p GameStickArch_Release/PC_Terminal_GUI
           mv GameStickArch.img GameStickArch_Release/
-          cp ESP32_Modem/ESP32_Modem.ino GameStickArch_Release/ESP32_Modem/
+          cp ESP32_Wireless_Terminal/ESP32_Wireless_Terminal.ino GameStickArch_Release/ESP32_Wireless_Terminal/
+          cp PC_Terminal_GUI/GameStick_Console.py GameStickArch_Release/PC_Terminal_GUI/
           cd GameStickArch_Release
           zip -r9 ../GameStickArch_Release.zip .
           cd ..
@@ -68,12 +70,14 @@ jobs:
           body: |
             ### GameStickArch Custom Image
             
-            This release contains the pre-compiled `.img` file along with the `ESP32_Modem.ino` in a single zip file.
+            This release contains the pre-compiled `.img` file, the `ESP32_Wireless_Terminal.ino` sketch, and the `GameStick_Console.py` GUI tool.
             
             **Instructions:**
             1. Extract `GameStickArch_Release.zip`
-            2. Flash `GameStickArch.img` to your GameStick SD card using BalenaEtcher or Rufus.
-            3. (Optional) Flash `ESP32_Modem.ino` to your ESP32 for WiFi access.
-            4. Insert the SD card into the GameStick and power it on!
+            2. Flash `GameStickArch.img` to your GameStick SD card.
+            3. Flash `ESP32_Wireless_Terminal.ino` to your ESP32.
+            4. Solder/Connect the ESP32 (TX, RX, GND) to the GameStick UART pins.
+            5. Connect your PC to the `GameStick-Terminal` Wi-Fi.
+            6. Run `python GameStick_Console.py` to instantly access the GameStick root shell wirelessly!
           draft: false
           prerelease: false
