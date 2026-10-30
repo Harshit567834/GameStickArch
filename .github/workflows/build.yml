@@ -34,7 +34,14 @@ jobs:
 
       - name: Build Image
         run: |
-          sudo bash build_image.sh
+          sudo bash -x build_image.sh > build_log.txt 2>&1
+
+      - name: Upload Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Logs
+          path: build_log.txt
 
       - name: Prepare Release Zip
         run: |
