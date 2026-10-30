@@ -85,6 +85,7 @@ When you first power on the GameStick with this image, it does a few magic trick
 ## 5. Using the System
 
 - **SSH Access:** Once connected to Wi-Fi, find the GameStick's IP on your router.
+  - On your computer, open a terminal (or Command Prompt / PowerShell) and type: `ssh root@<GameStick_IP_Address>` (e.g., `ssh root@192.168.1.50`).
   - Username: `root`
   - Password: `123`
 - **Text-Browser:** Type `lynx` in the terminal to browse the internet purely in text.
