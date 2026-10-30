@@ -43,6 +43,17 @@ sudo bsdtar -xpf ArchLinuxARM-armv7-latest.tar.gz -C mnt || true
 echo "Applying overlay..."
 sudo cp -r overlay/* mnt/
 
+# Create headless Wi-Fi configuration file on boot partition
+echo "Creating /boot/wifi.txt..."
+sudo bash -c 'cat > mnt/boot/wifi.txt << EOF
+# GameStickArch Headless Wi-Fi Configuration
+# ------------------------------------------
+# TYPE can be either "USB" (for standard Wi-Fi dongles) or "ESP32" (for the custom modem)
+TYPE=USB
+SSID=YourNetworkNameHere
+PASS=YourNetworkPasswordHere
+EOF'
+
 # Make scripts executable
 sudo chmod +x mnt/usr/local/bin/first_boot.sh
 sudo chmod +x mnt/usr/local/bin/gamestick_menu.py

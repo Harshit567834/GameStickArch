@@ -1,51 +1,91 @@
-# GameStickArch
+# GameStickArch - The Ultimate Guide
 
-A minimal, custom Arch Linux ARM system tailored for the **Gamestick Lite 4K**. It includes a text-based UI, an automated first-boot expansion script, and native support for both standard USB Wi-Fi adapters and an ESP32 modem integration!
+A minimal, custom Arch Linux ARM system specifically tailored for the **GameStick Lite 4K**. 
 
-## Features
-- **Size**: ~1.9GB image.
-- **Internet Connectivity Options**: 
-  - Plug-and-play support for standard USB Wi-Fi adapters (managed via NetworkManager).
-  - ESP32 Modem support via USB cable (`/dev/ttyUSB0`) or internal UART (`/dev/ttyS0`).
-- **Text-Based GUI**: Easy-to-use menu (`gamestick_menu.py`) for connecting to WiFi and Bluetooth.
-- **Text-Based Browser**: `lynx` included.
-- **Auto-login**: Boots directly to root (password: `123`).
-- **First Boot Setup**: Asks for Swap size, creates SWAP, and sets up a FAT32 partition for the remaining space on your SD card.
+This system transforms the locked-down GameStick into a fully functional, headless (or text-GUI) Linux server with an automated first-boot SD card expansion script, out-of-the-box support for USB Wi-Fi adapters, and a custom ESP32 serial modem implementation.
 
-## How to Get the Image
-1. Go to the **Actions** tab in this GitHub repository.
-2. Click on the latest successful build.
-3. Download the `GameStickArch-Image` artifact. (It will be a `.zip` containing `GameStickArch.img`).
+---
 
-*Alternatively, you can build it yourself on a Linux machine by running `sudo bash build_image.sh`.*
+## 1. Installation
 
-## Flashing to SD Card
-1. Extract the `.zip` file to get `GameStickArch.img`.
-2. Use **BalenaEtcher** or **Rufus** to flash `GameStickArch.img` to your SD card.
-3. **Note on Bootloader**: Because Gamestick clones use various chips (Rockchip/Allwinner), you may need to copy the bootloader from your original SD card or compile u-boot for your specific board. The first 1MB of this image is left empty specifically for flashing a bootloader (e.g., `dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8`).
+### 1.1 Downloading the Image
+1. Go to the **[Releases](https://github.com/Harshit567834/GameStickArch/releases)** tab on this GitHub repository.
+2. Download the latest `GameStickArch_Release.zip` file.
+3. Extract the zip file to your computer. You will find `GameStickArch.img` and a folder containing the ESP32 code.
 
-## Connecting to the Internet
+### 1.2 Flashing to your SD Card
+1. Download **[Rufus](https://rufus.ie/)** or **[BalenaEtcher](https://balena.io/etcher/)**.
+2. Insert your GameStick's SD card (e.g., 64GB) into your computer.
+3. Select `GameStickArch.img` and flash it to the SD card.
+4. *Note on Bootloaders:* GameStick clones use various generic chips (like Rockchip or Allwinner). To ensure it boots, you may need to copy the original bootloader from your stock GameStick SD card. The first 1MB of this Arch image is deliberately left empty so you can inject a bootloader (e.g. `dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8`).
 
-You have two options for getting internet access on your GameStick:
+---
 
-### Option 1: Standard USB Wi-Fi Adapter (Easiest)
-1. Plug a standard USB Wi-Fi adapter (or dongle) directly into the GameStick's USB port. (Use an OTG splitter if you need to keep your controllers plugged in).
-2. Type `gamestick_menu.py` and select **Setup WiFi (Standard USB Wi-Fi Adapter)**.
-3. Select your network, enter the password, and you're connected natively via NetworkManager!
+## 2. Setting Up the Internet (The Chicken-and-Egg Problem)
 
-### Option 2: The ESP32 Modem
-The ESP32 acts as a transparent SLIP/PPP modem for the Gamestick. You can connect it via **USB cable** or via **internal UART pins**.
-1. Open the `ESP32_Modem` folder.
-2. Open `ESP32_Modem.ino` in the Arduino IDE and flash it to **any ESP32** (e.g., DevKit V1).
-3. Connect the ESP32 to the GameStick:
-   - **Method A (USB Cable):** Plug the ESP32 directly into the GameStick's USB port. The system will automatically detect it on `/dev/ttyUSB0` or `/dev/ttyACM0`.
-   - **Method B (Internal UART Pins):** Connect ESP32 TX to Gamestick RX (UART0), ESP32 RX to Gamestick TX (UART0), and GND to GND.
-4. Open `gamestick_menu.py`, select **Setup WiFi (ESP32 Modem)**. The script will auto-detect the port, scan for networks, and establish a PPP connection over the serial link!
+Because the GameStick lacks a keyboard, getting it on the network to SSH into it is normally a hassle. GameStickArch provides two incredibly simple ways to connect to the internet.
 
-## Usage
-1. Insert the SD card into the Gamestick and power it on.
-2. On **first boot**, the script will ask how much SWAP (in MB) you want. It will then partition the rest of your SD card as a FAT32 share drive, format it, and reboot.
-3. Upon reboot, it will auto-login to root.
-4. Type `gamestick_menu.py` and press Enter to open the setup UI.
-5. Select **Setup WiFi (ESP32 Modem)**. The Gamestick will communicate with the ESP32, scan for networks, and let you connect!
-6. Once connected, you can use `lynx` to browse the web or SSH into the Gamestick using the IP assigned to the ESP32!
+### Method A: "Headless" Auto-Setup (Recommended!)
+We have included a script that runs automatically on startup. You do not need a keyboard or a screen for this!
+
+1. After flashing the SD card, leave it plugged into your PC.
+2. Open the SD card's **`BOOT`** partition (it is formatted as FAT32, so Windows/Mac can read it).
+3. Open the file named **`wifi.txt`** in any text editor.
+4. It will look like this:
+   ```ini
+   # GameStickArch Headless Wi-Fi Configuration
+   # TYPE can be either "USB" (for standard Wi-Fi dongles) or "ESP32" (for the custom modem)
+   TYPE=USB
+   SSID=YourNetworkNameHere
+   PASS=YourNetworkPasswordHere
+   ```
+5. Change `TYPE` to either `USB` (if you are plugging in a USB Wi-Fi dongle) or `ESP32` (if you are using the custom modem trick).
+6. Fill in your Wi-Fi `SSID` and `PASS`.
+7. Save the file.
+8. Put the SD card in the GameStick and turn it on. In the background, the OS will automatically detect `wifi.txt`, connect to your network, and you can immediately SSH into it! 
+*(Note: It does not delete `wifi.txt`. It safely checks if you are already connected to prevent endless loops, so you can leave the file there forever).*
+
+### Method B: The Interactive Menu
+If you happen to have a USB keyboard plugged into the GameStick (via an OTG splitter hub):
+1. Plug your GameStick into a TV.
+2. The OS will automatically log you into the `root` terminal.
+3. Type `gamestick_menu.py` and press Enter.
+4. A beautiful text-based GUI will appear. Use your arrow keys to select your network adapter, scan for Wi-Fi networks, and type your password on-screen.
+
+---
+
+## 3. Hardware Connectivity Guides
+
+### Hardware Option 1: Standard USB Wi-Fi Adapter (Easiest)
+NetworkManager is pre-installed. If you have a standard Linux-compatible USB Wi-Fi dongle (like a TP-Link or generic 802.11n adapter), just plug it into the GameStick's USB port. Use the `wifi.txt` method or the `gamestick_menu.py` to connect.
+
+### Hardware Option 2: The ESP32 Custom Modem
+If you don't have a USB Wi-Fi adapter, you can use a $4 ESP32 microcontroller as a transparent SLIP/PPP modem!
+1. Open the `ESP32_Modem` folder from your downloaded release.
+2. Open `ESP32_Modem.ino` in the **Arduino IDE**.
+3. Flash the code to your ESP32.
+4. Plug the ESP32 into the GameStick. You can do this in two ways:
+   - **The USB Cable Way:** Plug a Micro-USB cable from the ESP32 directly into the GameStick's USB port. GameStickArch is programmed to auto-detect the ESP32 on `/dev/ttyUSB0`.
+   - **The Internal Solder Way:** Solder ESP32 TX to GameStick RX (UART0), ESP32 RX to GameStick TX, and connect the Grounds. GameStickArch auto-detects this on `/dev/ttyS0`.
+5. The GameStick will send serial commands to the ESP32, telling it to connect to Wi-Fi. The ESP32 then establishes a PPP data-tunnel with the GameStick, granting you internet!
+
+---
+
+## 4. First Boot Expansion & Swap Setup
+
+When you first power on the GameStick with this image, it does a few magic tricks automatically to maximize your SD Card space:
+
+1. **Partitioning:** The base image is 1.9GB. The script analyzes your physical SD card (e.g. 64GB).
+2. **Swap:** It prompts you asking how much RAM Swap you want (in MB). We recommend `1024` (1GB). It instantly creates this Swap partition.
+3. **FAT32 Expansion:** It takes the *entire remaining space* of the SD card and formats it as a `FAT32` share drive (mounted at `/mnt/share`). This allows you to effortlessly drag and drop ROMs, files, or scripts from a Windows/Mac PC directly onto the SD card without dealing with Ext4 permissions.
+4. The system automatically updates `/etc/fstab` and reboots to finalize the layout.
+
+---
+
+## 5. Using the System
+
+- **SSH Access:** Once connected to Wi-Fi, find the GameStick's IP on your router.
+  - Username: `root`
+  - Password: `123`
+- **Text-Browser:** Type `lynx` in the terminal to browse the internet purely in text.
+- **Bluetooth:** Type `gamestick_menu.py` and select **Setup Bluetooth**. This securely drops you into `bluetoothctl` so you can type `scan on` and `pair <MAC_ADDRESS>` to link your wireless controllers!

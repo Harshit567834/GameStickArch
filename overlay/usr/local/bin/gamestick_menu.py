@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys
 import curses
 import serial
 import time
@@ -15,6 +16,75 @@ def find_esp32_port():
         if os.path.exists(port):
             return port
     return None
+
+def setup_headless():
+    wifi_file = '/boot/wifi.txt'
+    if not os.path.exists(wifi_file):
+        return
+    
+    try:
+        with open(wifi_file, 'r') as f:
+            lines = f.readlines()
+    except Exception as e:
+        print(f"Error reading wifi.txt: {e}")
+        return
+        
+    config = {}
+    for line in lines:
+        # Ignore comments
+        line = line.split('#')[0].strip()
+        if '=' in line:
+            k, v = line.split('=', 1)
+            config[k.strip()] = v.strip()
+            
+    ssid = config.get('SSID', '')
+    password = config.get('PASS', '')
+    ctype = config.get('TYPE', '')
+    
+    # If the user hasn't changed the default placeholder, do nothing
+    if ssid == 'YourNetworkNameHere' or not ssid:
+        return
+
+    if ctype == 'USB':
+        # Check if already connected to this SSID
+        try:
+            output = subprocess.check_output("nmcli -t -f active,ssid dev wifi", shell=True, stderr=subprocess.DEVNULL).decode('utf-8')
+            if f"yes:{ssid}" in output:
+                return # Already connected, do not spam nmcli
+        except:
+            pass
+
+        print(f"Headless Setup: Connecting to {ssid} via USB Wi-Fi...")
+        os.system("systemctl start NetworkManager >/dev/null 2>&1")
+        os.system("nmcli radio wifi on >/dev/null 2>&1")
+        time.sleep(2)
+        os.system(f"nmcli dev wifi connect '{ssid}' password '{password}' >/dev/null 2>&1")
+        
+    elif ctype == 'ESP32':
+        # Check if pppd is already running (we are connected)
+        if os.system("pgrep pppd >/dev/null 2>&1") == 0:
+            return
+
+        print(f"Headless Setup: Connecting to {ssid} via ESP32 Modem...")
+        serial_port = find_esp32_port()
+        if serial_port:
+            try:
+                ser = serial.Serial(serial_port, BAUD_RATE, timeout=2)
+                time.sleep(1.2)
+                ser.write(b'+++') # Escape sequence
+                time.sleep(1.2)
+                ser.read_all()
+                ser.write(f'CONNECT {ssid} {password}\n'.encode('utf-8'))
+                time.sleep(1)
+                ser.write(b'START\n')
+                ser.close()
+                os.system("killall pppd 2>/dev/null")
+                time.sleep(1)
+                os.system(f"pppd {serial_port} {BAUD_RATE} 10.0.0.1:10.0.0.2 proxyarp local noauth defaultroute persist maxfail 0 &")
+            except Exception as e:
+                print(f"Error setting up ESP32: {e}")
+        else:
+            print("Error: Could not find ESP32 port for headless setup.")
 
 def draw_menu(stdscr):
     curses.curs_set(0)
@@ -159,13 +229,11 @@ def setup_usb_wifi(stdscr):
     stdscr.addstr(2, 2, "Scanning for Wi-Fi networks (USB Adapter)...", curses.A_BOLD)
     stdscr.refresh()
     
-    # Ensure NetworkManager is running and Wi-Fi is enabled
     os.system("systemctl start NetworkManager >/dev/null 2>&1")
     os.system("nmcli radio wifi on >/dev/null 2>&1")
     time.sleep(2)
     
     try:
-        # Scan for SSIDs
         output = subprocess.check_output("nmcli -t -f SSID dev wifi", shell=True, stderr=subprocess.DEVNULL).decode('utf-8')
         networks = list(set([line for line in output.split('\n') if line.strip()]))
     except Exception:
@@ -209,7 +277,6 @@ def setup_usb_wifi(stdscr):
     stdscr.addstr(6, 2, "Connecting...")
     stdscr.refresh()
     
-    # Connect using nmcli
     result = os.system(f"nmcli dev wifi connect '{ssid}' password '{password}' >/dev/null 2>&1")
     
     if result == 0:
@@ -234,4 +301,7 @@ def setup_bluetooth(stdscr):
     stdscr.clear()
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1 and sys.argv[1] == '--headless':
+        setup_headless()
+        sys.exit(0)
     curses.wrapper(draw_menu)
