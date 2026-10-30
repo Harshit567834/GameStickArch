@@ -61,26 +61,20 @@ def setup_headless():
         os.system(f"nmcli dev wifi connect '{ssid}' password '{password}' >/dev/null 2>&1")
         
     elif ctype == 'ESP32':
-        # Check if pppd is already running (we are connected)
-        if os.system("pgrep pppd >/dev/null 2>&1") == 0:
-            return
-
-        print(f"Headless Setup: Connecting to {ssid} via ESP32 Modem...")
+        print(f"Headless Setup: Connecting to {ssid} via ESP32 TCP Bridge...")
         serial_port = find_esp32_port()
         if serial_port:
             try:
                 ser = serial.Serial(serial_port, BAUD_RATE, timeout=2)
-                time.sleep(1.2)
-                ser.write(b'+++') # Escape sequence
-                time.sleep(1.2)
-                ser.read_all()
                 ser.write(f'CONNECT {ssid} {password}\n'.encode('utf-8'))
-                time.sleep(1)
-                ser.write(b'START\n')
                 ser.close()
-                os.system("killall pppd 2>/dev/null")
+                time.sleep(2)
+                
+                # Start socat bridge: binds local SSH (port 22) to the serial port
+                os.system("killall socat 2>/dev/null")
                 time.sleep(1)
-                os.system(f"pppd {serial_port} {BAUD_RATE} 10.0.0.1:10.0.0.2 proxyarp local noauth defaultroute persist maxfail 0 &")
+                os.system(f"socat {serial_port},b{BAUD_RATE},raw,echo=0 TCP:127.0.0.1:22 &")
+                print("Started Serial-to-SSH bridge!")
             except Exception as e:
                 print(f"Error setting up ESP32: {e}")
         else:
