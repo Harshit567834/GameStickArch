@@ -4,15 +4,28 @@ import serial
 import time
 import subprocess
 import os
+import glob
 
-SERIAL_PORT = '/dev/ttyS0'
 BAUD_RATE = 115200
+
+def find_esp32_port():
+    # Check common USB serial ports first, then fallback to hardware UART
+    ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*') + ['/dev/ttyS0']
+    for port in ports:
+        if os.path.exists(port):
+            return port
+    return None
 
 def draw_menu(stdscr):
     curses.curs_set(0)
     stdscr.clear()
     
-    menu = ['1. Setup WiFi (ESP32 Modem)', '2. Setup Bluetooth', '3. Exit']
+    menu = [
+        '1. Setup WiFi (ESP32 Modem)', 
+        '2. Setup WiFi (Standard USB Wi-Fi Adapter)', 
+        '3. Setup Bluetooth', 
+        '4. Exit'
+    ]
     current_row = 0
 
     while True:
@@ -40,26 +53,38 @@ def draw_menu(stdscr):
             current_row += 1
         elif key == curses.KEY_ENTER or key in [10, 13]:
             if current_row == 0:
-                setup_wifi(stdscr)
+                setup_esp32_wifi(stdscr)
             elif current_row == 1:
-                setup_bluetooth(stdscr)
+                setup_usb_wifi(stdscr)
             elif current_row == 2:
+                setup_bluetooth(stdscr)
+            elif current_row == 3:
                 break
 
-def setup_wifi(stdscr):
+def setup_esp32_wifi(stdscr):
     stdscr.clear()
     stdscr.addstr(2, 2, "Connecting to ESP32 Modem...", curses.A_BOLD)
+    
+    serial_port = find_esp32_port()
+    if not serial_port:
+        stdscr.addstr(4, 2, "Error: Could not find ESP32 on /dev/ttyUSB*, /dev/ttyACM*, or /dev/ttyS0")
+        stdscr.addstr(6, 2, "Press any key to return.")
+        stdscr.refresh()
+        stdscr.getch()
+        return
+
+    stdscr.addstr(3, 2, f"Found device on {serial_port}")
     stdscr.refresh()
     
     try:
-        ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=2)
+        ser = serial.Serial(serial_port, BAUD_RATE, timeout=2)
         # Escape PPP mode if active
         time.sleep(1.2)
         ser.write(b'+++')
         time.sleep(1.2)
         ser.read_all()
         
-        stdscr.addstr(4, 2, "Scanning for WiFi networks...")
+        stdscr.addstr(5, 2, "Scanning for WiFi networks...")
         stdscr.refresh()
         
         ser.write(b'SCAN\n')
@@ -73,7 +98,7 @@ def setup_wifi(stdscr):
                 networks.append(line)
         
         if not networks:
-            stdscr.addstr(6, 2, "No networks found. Press any key.")
+            stdscr.addstr(7, 2, "No networks found. Press any key.")
             stdscr.getch()
             ser.close()
             return
@@ -81,7 +106,7 @@ def setup_wifi(stdscr):
         current_row = 0
         while True:
             stdscr.clear()
-            stdscr.addstr(2, 2, "Select WiFi Network:", curses.A_BOLD)
+            stdscr.addstr(2, 2, "Select WiFi Network (ESP32):", curses.A_BOLD)
             for idx, net in enumerate(networks):
                 if idx == current_row:
                     stdscr.addstr(4 + idx, 4, net, curses.A_REVERSE)
@@ -119,15 +144,80 @@ def setup_wifi(stdscr):
         # Start pppd as a server
         os.system(f"killall pppd 2>/dev/null")
         time.sleep(1)
-        os.system(f"pppd {SERIAL_PORT} {BAUD_RATE} 10.0.0.1:10.0.0.2 proxyarp local noauth defaultroute persist maxfail 0 &")
+        os.system(f"pppd {serial_port} {BAUD_RATE} 10.0.0.1:10.0.0.2 proxyarp local noauth defaultroute persist maxfail 0 &")
         
-        stdscr.addstr(9, 2, "WiFi configured! Press any key.")
+        stdscr.addstr(9, 2, "WiFi configured via ESP32! Press any key.")
         stdscr.getch()
         
     except Exception as e:
-        stdscr.addstr(4, 2, f"Error: {e}")
-        stdscr.addstr(6, 2, "Press any key.")
+        stdscr.addstr(5, 2, f"Error: {e}")
+        stdscr.addstr(7, 2, "Press any key.")
         stdscr.getch()
+
+def setup_usb_wifi(stdscr):
+    stdscr.clear()
+    stdscr.addstr(2, 2, "Scanning for Wi-Fi networks (USB Adapter)...", curses.A_BOLD)
+    stdscr.refresh()
+    
+    # Ensure NetworkManager is running and Wi-Fi is enabled
+    os.system("systemctl start NetworkManager >/dev/null 2>&1")
+    os.system("nmcli radio wifi on >/dev/null 2>&1")
+    time.sleep(2)
+    
+    try:
+        # Scan for SSIDs
+        output = subprocess.check_output("nmcli -t -f SSID dev wifi", shell=True, stderr=subprocess.DEVNULL).decode('utf-8')
+        networks = list(set([line for line in output.split('\n') if line.strip()]))
+    except Exception:
+        stdscr.addstr(4, 2, "Failed to scan. Is a USB Wi-Fi adapter plugged in?")
+        stdscr.addstr(6, 2, "Press any key to return.")
+        stdscr.getch()
+        return
+
+    if not networks:
+        stdscr.addstr(4, 2, "No networks found. Ensure Wi-Fi adapter is connected.")
+        stdscr.addstr(6, 2, "Press any key to return.")
+        stdscr.getch()
+        return
+        
+    current_row = 0
+    while True:
+        stdscr.clear()
+        stdscr.addstr(2, 2, "Select WiFi Network (USB Adapter):", curses.A_BOLD)
+        for idx, net in enumerate(networks):
+            if idx == current_row:
+                stdscr.addstr(4 + idx, 4, net, curses.A_REVERSE)
+            else:
+                stdscr.addstr(4 + idx, 4, net)
+        
+        key = stdscr.getch()
+        if key == curses.KEY_UP and current_row > 0:
+            current_row -= 1
+        elif key == curses.KEY_DOWN and current_row < len(networks)-1:
+            current_row += 1
+        elif key == curses.KEY_ENTER or key in [10, 13]:
+            ssid = networks[current_row]
+            break
+            
+    # Get password
+    curses.echo()
+    stdscr.clear()
+    stdscr.addstr(2, 2, f"Enter password for {ssid}: ", curses.A_BOLD)
+    password = stdscr.getstr(4, 2, 64).decode('utf-8')
+    curses.noecho()
+    
+    stdscr.addstr(6, 2, "Connecting...")
+    stdscr.refresh()
+    
+    # Connect using nmcli
+    result = os.system(f"nmcli dev wifi connect '{ssid}' password '{password}' >/dev/null 2>&1")
+    
+    if result == 0:
+        stdscr.addstr(8, 2, "Successfully connected! Press any key.")
+    else:
+        stdscr.addstr(8, 2, "Failed to connect. Press any key.")
+        
+    stdscr.getch()
 
 def setup_bluetooth(stdscr):
     stdscr.clear()

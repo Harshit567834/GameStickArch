@@ -1,10 +1,12 @@
 # GameStickArch
 
-A minimal, custom Arch Linux ARM system tailored for the **Gamestick Lite 4K**. It includes a text-based UI, an automated first-boot expansion script, and an ESP32 modem integration for WiFi and SSH!
+A minimal, custom Arch Linux ARM system tailored for the **Gamestick Lite 4K**. It includes a text-based UI, an automated first-boot expansion script, and native support for both standard USB Wi-Fi adapters and an ESP32 modem integration!
 
 ## Features
 - **Size**: ~1.9GB image.
-- **ESP32 Modem**: Use an ESP32 as a WiFi modem to provide internet access to the Gamestick.
+- **Internet Connectivity Options**: 
+  - Plug-and-play support for standard USB Wi-Fi adapters (managed via NetworkManager).
+  - ESP32 Modem support via USB cable (`/dev/ttyUSB0`) or internal UART (`/dev/ttyS0`).
 - **Text-Based GUI**: Easy-to-use menu (`gamestick_menu.py`) for connecting to WiFi and Bluetooth.
 - **Text-Based Browser**: `lynx` included.
 - **Auto-login**: Boots directly to root (password: `123`).
@@ -22,15 +24,23 @@ A minimal, custom Arch Linux ARM system tailored for the **Gamestick Lite 4K**. 
 2. Use **BalenaEtcher** or **Rufus** to flash `GameStickArch.img` to your SD card.
 3. **Note on Bootloader**: Because Gamestick clones use various chips (Rockchip/Allwinner), you may need to copy the bootloader from your original SD card or compile u-boot for your specific board. The first 1MB of this image is left empty specifically for flashing a bootloader (e.g., `dd if=u-boot-sunxi-with-spl.bin of=/dev/sdX bs=1024 seek=8`).
 
-## Setting up the ESP32 Modem
-The ESP32 acts as a transparent SLIP/PPP modem for the Gamestick.
+## Connecting to the Internet
+
+You have two options for getting internet access on your GameStick:
+
+### Option 1: Standard USB Wi-Fi Adapter (Easiest)
+1. Plug a standard USB Wi-Fi adapter (or dongle) directly into the GameStick's USB port. (Use an OTG splitter if you need to keep your controllers plugged in).
+2. Type `gamestick_menu.py` and select **Setup WiFi (Standard USB Wi-Fi Adapter)**.
+3. Select your network, enter the password, and you're connected natively via NetworkManager!
+
+### Option 2: The ESP32 Modem
+The ESP32 acts as a transparent SLIP/PPP modem for the Gamestick. You can connect it via **USB cable** or via **internal UART pins**.
 1. Open the `ESP32_Modem` folder.
-2. Open `ESP32_Modem.ino` in the Arduino IDE.
-3. Flash it to **any ESP32** (e.g., DevKit V1).
-4. Connect the ESP32 to the Gamestick via UART:
-   - ESP32 TX -> Gamestick RX (UART0)
-   - ESP32 RX -> Gamestick TX (UART0)
-   - GND -> GND
+2. Open `ESP32_Modem.ino` in the Arduino IDE and flash it to **any ESP32** (e.g., DevKit V1).
+3. Connect the ESP32 to the GameStick:
+   - **Method A (USB Cable):** Plug the ESP32 directly into the GameStick's USB port. The system will automatically detect it on `/dev/ttyUSB0` or `/dev/ttyACM0`.
+   - **Method B (Internal UART Pins):** Connect ESP32 TX to Gamestick RX (UART0), ESP32 RX to Gamestick TX (UART0), and GND to GND.
+4. Open `gamestick_menu.py`, select **Setup WiFi (ESP32 Modem)**. The script will auto-detect the port, scan for networks, and establish a PPP connection over the serial link!
 
 ## Usage
 1. Insert the SD card into the Gamestick and power it on.
