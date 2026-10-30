@@ -76,7 +76,7 @@ pacman-key --init
 pacman-key --populate archlinuxarm
 
 # Install required packages
-pacman -Sy --noconfirm dosfstools parted lynx python python-pyserial ppp bluez bluez-utils openssh networkmanager avahi
+pacman -Sy --noconfirm dosfstools parted lynx python python-pyserial ppp bluez bluez-utils openssh networkmanager avahi linux-firmware
 
 # Enable NetworkManager
 systemctl enable NetworkManager
