@@ -22,7 +22,7 @@ mkfs.fat 4.2 (2021-01-31)
 mke2fs 1.47.2 (1-Jan-2025)
 Discarding device blocks:      0/460800             done                            
 Creating filesystem with 460800 4k blocks and 115200 inodes
-Filesystem UUID: fcc43aa9-ae1e-4d1a-89e1-36b0408ad195
+Filesystem UUID: 2be9bd5e-e329-4565-9ca4-1e3260fabf70
 Superblock backups stored on blocks: 
 	32768, 98304, 163840, 229376, 294912
 
@@ -39,7 +39,7 @@ Downloading Arch Linux ARM rootfs...
 + wget -q http://os.archlinuxarm.org/os/ArchLinuxARM-armv7-latest.tar.gz
 + echo 'Extracting rootfs (this may take a while)...'
 Extracting rootfs (this may take a while)...
-+ sudo bsdtar --no-xattrs --no-mac-metadata --no-acl -xpf ArchLinuxARM-armv7-latest.tar.gz -C mnt
++ sudo bsdtar -xpf ArchLinuxARM-armv7-latest.tar.gz -C mnt
 ./boot/: Cannot restore extended attributes on this file system.: Unknown error -1
 ./boot/dtbs/: Cannot restore extended attributes on this file system.: Unknown error -1
 ./boot/initramfs-linux.img: Cannot restore extended attributes on this file system.: Unknown error -1
@@ -1007,3 +1007,57 @@ Extracting rootfs (this may take a while)...
 ./boot/dtbs/imx6dl-victgo.dtb: Cannot restore extended attributes on this file system.: Unknown error -1
 ./boot/dtbs/imx6q-gw5907.dtb: Cannot restore extended attributes on this file system.: Unknown error -1
 bsdtar: Error exit delayed from previous errors.
++ true
++ echo 'Applying overlay...'
+Applying overlay...
++ sudo cp -r overlay/etc overlay/root overlay/usr mnt/
++ sudo chmod +x mnt/usr/local/bin/first_boot.sh
++ sudo chmod +x mnt/usr/local/bin/gamestick_menu.py
++ sudo cp /usr/bin/qemu-arm-static mnt/usr/bin/
++ echo 'Configuring system inside chroot...'
+Configuring system inside chroot...
++ sudo chroot mnt /bin/bash
+gpg: /etc/pacman.d/gnupg/trustdb.gpg: trustdb created
+gpg: no ultimately trusted keys found
+gpg: starting migration from earlier GnuPG versions
+gpg: porting secret keys from '/etc/pacman.d/gnupg/secring.gpg' to gpg-agent
+gpg: migration succeeded
+==> Generating pacman master key. This may take some time.
+gpg: Generating pacman keyring master key...
+gpg: directory '/etc/pacman.d/gnupg/openpgp-revocs.d' created
+gpg: revocation certificate stored as '/etc/pacman.d/gnupg/openpgp-revocs.d/F19F5625BE3204CEB1DD7AEF68BD80B3CED68C1D.rev'
+gpg: Done
+==> Updating trust database...
+gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+gpg: depth: 0  valid:   1  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 1u
+==> Appending keys from archlinuxarm.gpg...
+/usr/sbin/pacman-key: line 196: /dev/fd/63: No such file or directory
+==> Locally signing trusted keys in keyring...
+  -> Locally signed 1 key.
+==> Importing owner trust values...
+gpg: inserting ownertrust of 4
+==> Updating trust database...
+gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+gpg: depth: 0  valid:   1  signed:   1  trust: 0-, 0q, 0n, 0m, 0f, 1u
+gpg: depth: 1  valid:   1  signed:   0  trust: 0-, 0q, 0n, 1m, 0f, 0u
+:: Synchronizing package databases...
+error: restricting filesystem access failed because Landlock is not supported by the kernel!
+error: switching to sandbox user 'alpm' failed!
+error: failed to synchronize all databases (failed to retrieve some files)
+⚠️ /proc/ is not mounted. This is not a supported mode of operation. Please fix
+your invocation environment to mount /proc/ and /sys/ properly. Proceeding anyway.
+Your mileage may vary.
+Failed to enable unit: Unit NetworkManager.service does not exist
+⚠️ /proc/ is not mounted. This is not a supported mode of operation. Please fix
+your invocation environment to mount /proc/ and /sys/ properly. Proceeding anyway.
+Your mileage may vary.
+⚠️ /proc/ is not mounted. This is not a supported mode of operation. Please fix
+your invocation environment to mount /proc/ and /sys/ properly. Proceeding anyway.
+Your mileage may vary.
+Failed to enable unit: Unit bluetooth.service does not exist
++ echo 'Cleaning up...'
+Cleaning up...
++ sudo rm mnt/usr/bin/qemu-arm-static
++ sudo umount mnt/boot
++ sudo umount mnt
+umount: /home/runner/work/GameStickArch/GameStickArch/mnt: target is busy.
