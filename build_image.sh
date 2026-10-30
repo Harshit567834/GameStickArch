@@ -76,10 +76,13 @@ pacman-key --init
 pacman-key --populate archlinuxarm
 
 # Install required packages
-pacman -Sy --noconfirm dosfstools parted lynx python python-pyserial ppp bluez bluez-utils openssh networkmanager
+pacman -Sy --noconfirm dosfstools parted lynx python python-pyserial ppp bluez bluez-utils openssh networkmanager avahi
 
 # Enable NetworkManager
 systemctl enable NetworkManager
+
+# Enable Avahi (mDNS) for gamestick.local
+systemctl enable avahi-daemon
 
 # Enable SSH
 systemctl enable sshd
@@ -89,6 +92,9 @@ systemctl enable bluetooth
 
 # Set root password to '123'
 echo "root:123" | chpasswd
+
+# Set hostname
+echo "gamestick" > /etc/hostname
 
 # Setup fstab
 echo "LABEL=ROOT / ext4 defaults,noatime 0 1" > /etc/fstab

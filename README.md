@@ -84,9 +84,10 @@ When you first power on the GameStick with this image, it does a few magic trick
 
 ## 5. Using the System
 
-- **SSH Access:** Once connected to Wi-Fi, find the GameStick's IP on your router.
-  - On your computer, open a terminal (or Command Prompt / PowerShell) and type: `ssh root@<GameStick_IP_Address>` (e.g., `ssh root@192.168.1.50`).
+- **SSH Access:** Because the system broadcasts its hostname, you don't even need to look up its IP address!
+  - On your computer, open a terminal (or Command Prompt / PowerShell) and simply type: **`ssh root@gamestick.local`**
   - Username: `root`
   - Password: `123`
+  - *(If `gamestick.local` fails to resolve on your older network, you can still find the GameStick's IP on your router and connect via `ssh root@192.168.1.50`).*
 - **Text-Browser:** Type `lynx` in the terminal to browse the internet purely in text.
 - **Bluetooth:** Type `gamestick_menu.py` and select **Setup Bluetooth**. This securely drops you into `bluetoothctl` so you can type `scan on` and `pair <MAC_ADDRESS>` to link your wireless controllers!

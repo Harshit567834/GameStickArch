@@ -1,4 +1,5 @@
 #include <WiFi.h>
+#include <ESPmDNS.h>
 #include <esp_netif.h>
 #include <netif/ppp/pppos.h>
 #include <netif/ppp/ppp.h>
@@ -68,6 +69,9 @@ void loop() {
           while (WiFi.status() != WL_CONNECTED && attempts < 20) {
             delay(500);
             attempts++;
+          }
+          if (WiFi.status() == WL_CONNECTED) {
+            MDNS.begin("gamestick");
           }
         }
 
