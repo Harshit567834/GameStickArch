@@ -1,35 +1,60 @@
-name: Build GameStickArch Image
+name: Build and Release GameStickArch Image
 
 on:
   push:
-    branches: [ main, arena/* ]
+    tags:
+      - 'v*'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y qemu-user-static binfmt-support parted dosfstools e2fsprogs bsdtar
+          sudo apt-get install -y qemu-user-static binfmt-support parted dosfstools e2fsprogs bsdtar zip
 
       - name: Build Image
         run: |
           sudo bash build_image.sh
 
-      - name: Zip Image
+      - name: Prepare Release Zip
         run: |
-          zip -9 GameStickArch.img.zip GameStickArch.img
+          mkdir -p GameStickArch_Release/ESP32_Modem
+          mv GameStickArch.img GameStickArch_Release/
+          cp ESP32_Modem/ESP32_Modem.ino GameStickArch_Release/ESP32_Modem/
+          cd GameStickArch_Release
+          zip -r9 ../GameStickArch_Release.zip .
+          cd ..
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: GameStickArch-Image
-          path: GameStickArch.img.zip
+          name: GameStickArch-Release-Zip
+          path: GameStickArch_Release.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: GameStickArch_Release.zip
+          name: "GameStickArch ${{ github.ref_name }}"
+          body: |
+            ### GameStickArch Custom Image
+            
+            This release contains the pre-compiled `.img` file along with the `ESP32_Modem.ino` in a single zip file.
+            
+            **Instructions:**
+            1. Extract `GameStickArch_Release.zip`
+            2. Flash `GameStickArch.img` to your GameStick SD card using BalenaEtcher or Rufus.
+            3. (Optional) Flash `ESP32_Modem.ino` to your ESP32 for WiFi access.
+            4. Insert the SD card into the GameStick and power it on!
+          draft: false
+          prerelease: false
