@@ -52,7 +52,14 @@ sudo cp /usr/bin/qemu-arm-static mnt/usr/bin/
 
 # Configure the system inside chroot
 echo "Configuring system inside chroot..."
+sudo mount --bind /dev mnt/dev
+sudo mount -t proc /proc mnt/proc
+sudo mount -t sysfs /sys mnt/sys
 sudo chroot mnt /bin/bash <<EOF
+
+# Disable pacman sandbox which breaks in QEMU GitHub Actions
+sed -i 's/^#DisableSandbox/DisableSandbox/g' /etc/pacman.conf || echo "DisableSandbox" >> /etc/pacman.conf
+
 # Initialize pacman keyring
 pacman-key --init
 pacman-key --populate archlinuxarm
@@ -76,10 +83,15 @@ echo "root:123" | chpasswd
 echo "LABEL=ROOT / ext4 defaults,noatime 0 1" > /etc/fstab
 echo "LABEL=BOOT /boot vfat defaults 0 2" >> /etc/fstab
 
+# Stop gpg-agent inside chroot
+killall gpg-agent 2>/dev/null || true
 EOF
 
 # Cleanup
 echo "Cleaning up..."
+sudo umount mnt/sys
+sudo umount mnt/proc
+sudo umount mnt/dev
 sudo rm mnt/usr/bin/qemu-arm-static
 sudo umount mnt/boot
 sudo umount mnt
