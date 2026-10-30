@@ -12,7 +12,7 @@ truncate -s $IMG_SIZE $IMG_NAME
 
 # Partition the image
 echo "Partitioning image..."
-parted -s $IMG_NAME mktable dos
+parted -s $IMG_NAME mktable msdos
 parted -s $IMG_NAME mkpart primary fat32 1MiB 100MiB
 parted -s $IMG_NAME set 1 boot on
 parted -s $IMG_NAME mkpart primary ext4 100MiB 100%
