@@ -71,8 +71,9 @@ Because the GameStick's standard USB-A port might not supply 5V on first boot wi
 4. **Using the PC GUI:**
    - With the ESP32 powered on, look at your PC's Wi-Fi networks and connect to **`GameStick-Terminal`** (Password: `12345678`).
    - Run the Python app: `python GameStick_Console.py` (Works natively on Windows, Mac, and Linux).
+   - Type your home Wi-Fi and Password into the top bar, and click **Send Wi-Fi to ESP32**.
    - Click **Connect Terminal**. You will instantly be dropped into a live `root@gamestick:~#` terminal. 
-   - You now have full diagnostic access to the GameStick! Run `dmesg` to check hardware logs, manually configure Wi-Fi, or explore the file system without ever needing an HDMI screen or keyboard!
+   - *Want true internet?* From this new terminal, just type `start_internet.sh`. The ESP32 will instantly convert itself into a true NAT router, bridging the GameStick to your home internet! You can then close the python app, and simply `ssh root@gamestick.local` over your Wi-Fi!
 
 ---
 

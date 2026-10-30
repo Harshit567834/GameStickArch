@@ -43,6 +43,10 @@ sudo bsdtar -xpf ArchLinuxARM-armv7-latest.tar.gz -C mnt || true
 echo "Applying overlay..."
 sudo cp -r overlay/* mnt/
 
+# Make scripts executable
+sudo chmod +x mnt/usr/local/bin/first_boot.sh
+sudo chmod +x mnt/usr/local/bin/gamestick_menu.py
+sudo chmod +x mnt/usr/local/bin/start_internet.sh
 # Create headless Wi-Fi configuration file on boot partition
 echo "Creating /boot/wifi.txt..."
 sudo bash -c 'cat > mnt/boot/wifi.txt << EOF
